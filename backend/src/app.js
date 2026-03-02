@@ -5,7 +5,10 @@ const { errorHandler } = require('./middlewares/error.middleware');
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: '*' })); // Allow frontend origin
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+})); // Allow frontend origin
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
