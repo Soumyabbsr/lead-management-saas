@@ -20,13 +20,16 @@ const createTenant = asyncHandler(async (req, res) => {
 
     if (!planId) {
         // Find or create a default 'Free' plan or similar fallback
-        const defaultPlan = await Plan.findOne() || await Plan.create({
-            name: 'Free',
-            priceMonthly: 0,
-            priceYearly: 0,
-            maxEmployees: req.body.employeeLimit || 5,
-            maxLeads: req.body.leadLimit || 100,
-        });
+        let defaultPlan = await Plan.findOne({ name: 'Free' });
+        if (!defaultPlan) {
+            defaultPlan = await Plan.create({
+                name: 'Free',
+                priceMonthly: 0,
+                priceYearly: 0,
+                maxEmployees: req.body.employeeLimit || 5,
+                maxLeads: req.body.leadLimit || 100,
+            });
+        }
         req.body.planId = defaultPlan._id;
     }
 

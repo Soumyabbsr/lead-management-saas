@@ -6,17 +6,14 @@ const User = require('./models/User');   // ✅ ADD THIS LINE
 const app = express();
 
 // Middlewares
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
-}));
+app.use(cors({ origin: '*' })); // Allow frontend origin
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Basic route
 app.get('/', (req, res) => {
-    res.json({ success: true, message: 'PG CRM API is running' });
+  res.json({ success: true, message: 'PG CRM API is running' });
 });
 
 // 🔥 TEMP ADMIN CREATION ROUTE (ADD THIS BLOCK)

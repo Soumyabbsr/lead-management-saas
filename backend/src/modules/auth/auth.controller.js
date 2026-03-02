@@ -53,7 +53,7 @@ const getMe = asyncHandler(async (req, res) => {
 
 // Helper to send standard token response
 const sendTokenResponse = (user, statusCode, res) => {
-    const token = generateToken(user);
+    const token = generateToken(user._id);
 
     // Remove password from output
     user.password = undefined;
