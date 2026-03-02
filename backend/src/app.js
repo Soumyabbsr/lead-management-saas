@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { errorHandler } = require('./middlewares/error.middleware');
+const User = require('./models/User');   // ✅ ADD THIS LINE
 
 const app = express();
 
@@ -8,13 +9,31 @@ const app = express();
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
-})); // Allow frontend origin
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Basic route
 app.get('/', (req, res) => {
     res.json({ success: true, message: 'PG CRM API is running' });
+});
+
+// 🔥 TEMP ADMIN CREATION ROUTE (ADD THIS BLOCK)
+app.get('/create-admin', async (req, res) => {
+  try {
+    await User.create({
+      name: "Super Admin",
+      email: "admin@pgcrm.com",
+      password: "Admin@123",  // plain password (auto hashed)
+      role: "super_admin",
+      status: "Active"
+    });
+
+    res.json({ success: true, message: "Admin created successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Import and mount routes here
