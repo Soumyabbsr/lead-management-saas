@@ -173,7 +173,7 @@ export default function EditTenantModal({ isOpen, tenant, onClose, onSuccess }: 
                                 required
                                 value={formData.planId}
                                 onChange={e => handlePlanSelect(e.target.value)}
-                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' }}
+                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' as any }}
                             >
                                 <option value="" disabled>Select a plan...</option>
                                 {plans.map(p => (
@@ -187,7 +187,7 @@ export default function EditTenantModal({ isOpen, tenant, onClose, onSuccess }: 
                                 required
                                 value={formData.status}
                                 onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto', backgroundColor: formData.status === 'suspended' ? '#fef2f2' : '#f8fafc', color: formData.status === 'suspended' ? '#ef4444' : '#0f172a' }}
+                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' as any, backgroundColor: formData.status === 'suspended' ? '#fef2f2' : '#f8fafc', color: formData.status === 'suspended' ? '#ef4444' : '#0f172a' }}
                             >
                                 <option value="active">Active</option>
                                 <option value="suspended">Suspended</option>

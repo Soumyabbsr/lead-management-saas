@@ -221,7 +221,7 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
                                     required
                                     value={formData.planId}
                                     onChange={e => handlePlanSelect(e.target.value)}
-                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' }}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' as any }}
                                 >
                                     <option value="" disabled>Select a plan...</option>
                                     {plans.map(p => (

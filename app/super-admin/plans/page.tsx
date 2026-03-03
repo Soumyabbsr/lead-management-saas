@@ -140,7 +140,7 @@ export default function PlansPage() {
             <AddPlanModal
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
-                onSuccess={(newPlan) => {
+                onSuccess={(newPlan: any) => {
                     setPlans([newPlan, ...plans])
                     setIsAddOpen(false);
                 }}
@@ -150,7 +150,7 @@ export default function PlansPage() {
                 isOpen={!!editPlan}
                 onClose={() => setEditPlan(null)}
                 planToEdit={editPlan}
-                onSuccess={(updatedPlan) => {
+                onSuccess={(updatedPlan: any) => {
                     setPlans(plans.map(p => p._id === updatedPlan._id ? updatedPlan : p));
                     setEditPlan(null);
                 }}

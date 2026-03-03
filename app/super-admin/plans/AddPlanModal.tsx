@@ -84,7 +84,7 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                             required
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' }}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' as any }}
                         >
                             <option value="Free">Free</option>
                             <option value="Basic">Basic</option>
@@ -100,8 +100,8 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                                 type="number"
                                 min="0"
                                 value={formData.priceMonthly}
-                                onChange={e => setFormData({ ...formData, priceMonthly: parseInt(e.target.value) || 0 })}
-                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
+                                onChange={e => setFormData({ ...formData, priceMonthly: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
+                                style={{ width: '100%', padding: '10px 12px 10px 32px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
                             />
                         </div>
                         <div>
@@ -111,8 +111,8 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                                 type="number"
                                 min="0"
                                 value={formData.priceYearly}
-                                onChange={e => setFormData({ ...formData, priceYearly: parseInt(e.target.value) || 0 })}
-                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
+                                onChange={e => setFormData({ ...formData, priceYearly: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
+                                style={{ width: '100%', padding: '10px 12px 10px 32px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
                             />
                         </div>
                     </div>
@@ -125,7 +125,7 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                                 type="number"
                                 min="1"
                                 value={formData.maxEmployees}
-                                onChange={e => setFormData({ ...formData, maxEmployees: parseInt(e.target.value) || 1 })}
+                                onChange={e => setFormData({ ...formData, maxEmployees: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
                                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
                             />
                         </div>
@@ -136,7 +136,7 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                                 type="number"
                                 min="1"
                                 value={formData.maxLeads}
-                                onChange={e => setFormData({ ...formData, maxLeads: parseInt(e.target.value) || 1 })}
+                                onChange={e => setFormData({ ...formData, maxLeads: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
                                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
                             />
                         </div>
