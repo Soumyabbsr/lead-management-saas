@@ -15,7 +15,8 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user) {
         res.status(401);
