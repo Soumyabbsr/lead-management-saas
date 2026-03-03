@@ -8,6 +8,16 @@ function isInactive(date) {
     return (Date.now() - new Date(date).getTime()) > 24 * 60 * 60 * 1000;
 }
 
+// Helper to reliably check if a date is "today" regardless of UTC offsets for early morning IST times
+function isToday(dateInput) {
+    if (!dateInput) return false;
+    const date = new Date(dateInput);
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+}
+
 // @desc    Get Admin Dashboard Stats
 // @route   GET /api/dashboard/admin
 // @access  Private (Admin)
@@ -24,9 +34,8 @@ const getAdminDashboard = asyncHandler(async (req, res) => {
     const newToday = allLeads.filter(l => new Date(l.createdAt) >= todayStart).length;
 
     // Visits today
-    const todayStr = new Date().toISOString().slice(0, 10);
     const visitsToday = allLeads.filter(l =>
-        l.visitDate && new Date(l.visitDate).toISOString().slice(0, 10) === todayStr && l.visitStatus !== 'Cancelled'
+        l.visitDate && isToday(l.visitDate) && l.visitStatus !== 'Cancelled'
     ).length;
 
     // Bookings this month
@@ -94,10 +103,6 @@ const getAdminDashboard = asyncHandler(async (req, res) => {
 const getSalesDashboard = asyncHandler(async (req, res) => {
     const myLeads = await Lead.find({ assignedTo: req.user._id });
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayStr = new Date().toISOString().slice(0, 10);
-
     const stageCounts = {
         New: myLeads.filter(l => l.stage === 'New').length,
         Contacted: myLeads.filter(l => l.stage === 'Contacted').length,
@@ -111,10 +116,10 @@ const getSalesDashboard = asyncHandler(async (req, res) => {
     );
 
     const myVisits = myLeads.filter(l =>
-        l.visitDate && new Date(l.visitDate).toISOString().slice(0, 10) === todayStr && l.visitStatus !== 'Cancelled'
+        l.visitDate && isToday(l.visitDate) && l.visitStatus !== 'Cancelled'
     );
 
-    const todayFollowUps = myLeads.filter(l => l.followUpDue && new Date(l.followUpDue).toISOString().slice(0, 10) === todayStr).length;
+    const todayFollowUps = myLeads.filter(l => l.followUpDue && isToday(l.followUpDue)).length;
 
     res.status(200).json({
         success: true,
