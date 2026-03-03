@@ -43,6 +43,7 @@ app.use('/api/bookings', require('./modules/bookings/booking.routes'));
 app.use('/api/dashboard', require('./modules/dashboard/dashboard.routes'));
 app.use('/api/settings', require('./modules/settings/settings.routes'));
 app.use('/api/whatsapp', require('./modules/whatsapp/whatsapp.routes'));
+app.use('/api/super-admin/plans', require('./modules/plans/plan.routes'));
 app.use('/api/super-admin', require('./modules/super-admin/superAdmin.routes'));
 app.use('/api/attendance', require('./modules/attendance/attendance.routes'));
 

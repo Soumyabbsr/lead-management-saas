@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/apiClient';
-import { Plus, Search, Edit2, ShieldAlert, CheckCircle2, LogIn } from 'lucide-react';
+import { Plus, Search, Edit2, ShieldAlert, CheckCircle2, LogIn, KeyRound } from 'lucide-react';
 import AddTenantModal from './AddTenantModal';
 import EditTenantModal from './EditTenantModal';
+import ResetPasswordModal from './ResetPasswordModal';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +15,7 @@ export default function TenantsPage() {
     const [search, setSearch] = useState('');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editTenant, setEditTenant] = useState<any | null>(null);
+    const [resetTenant, setResetTenant] = useState<any | null>(null);
 
     const { login } = useAuth();
     const router = useRouter();
@@ -120,7 +122,7 @@ export default function TenantsPage() {
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ fontWeight: 600, color: '#0f172a' }}>{t.name}</div>
                                             <div style={{ color: '#64748b', fontSize: '13px' }}>{t.email}</div>
-                                            <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>Owner: {t.ownerName}</div>
+                                            <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>Owner: {t.ownerName || '-'}</div>
                                         </td>
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ display: 'inline-block', background: '#e0e7ff', color: '#4f46e5', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
@@ -160,12 +162,18 @@ export default function TenantsPage() {
                                                 </button>
                                                 <button
                                                     onClick={() => setEditTenant(t)}
-                                                    title="Edit Limits"
+                                                    title="Edit Details"
                                                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
-
+                                                <button
+                                                    onClick={() => setResetTenant(t)}
+                                                    title="Reset Admin Password"
+                                                    style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    <KeyRound size={16} />
+                                                </button>
                                                 <button
                                                     onClick={async () => {
                                                         try {
@@ -191,7 +199,7 @@ export default function TenantsPage() {
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
                 onSuccess={(newTenant) => {
-                    setTenants([newTenant, ...tenants]);
+                    fetchTenants(); // re-fetch to get populated dependencies like plan name
                 }}
             />
 
@@ -199,9 +207,15 @@ export default function TenantsPage() {
                 isOpen={!!editTenant}
                 tenant={editTenant}
                 onClose={() => setEditTenant(null)}
-                onSuccess={(updatedTenant) => {
-                    setTenants(tenants.map(t => t._id === updatedTenant._id ? updatedTenant : t));
-                }}
+                // We re-fetch here too since the plan might be updated or nested objects morphed. 
+                // Or we could intelligently mutate the nested `planId` object. Fetch is safer for CRM.
+                onSuccess={() => fetchTenants()}
+            />
+
+            <ResetPasswordModal
+                isOpen={!!resetTenant}
+                tenant={resetTenant}
+                onClose={() => setResetTenant(null)}
             />
         </div>
     );

@@ -31,10 +31,27 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new Error('Invalid credentials');
     }
 
-    // Check if active
+    // Check if user is active
     if (user.status === 'Inactive') {
         res.status(401);
         throw new Error('User account is inactive');
+    }
+
+    // Check if Tenant is suspended (skip for super_admin)
+    if (user.role !== 'super_admin' && user.tenantId) {
+        const Tenant = require('../../models/Tenant'); // lazy load to avoid circular deps if any
+        const tenant = await Tenant.findById(user.tenantId);
+
+        if (tenant && tenant.status === 'suspended') {
+            res.status(403);
+            throw new Error('Account Suspended. Please contact support.');
+        }
+
+        // Add additional check for isDeleted tenant
+        if (tenant && tenant.isDeleted) {
+            res.status(403);
+            throw new Error('Account no longer exists.');
+        }
     }
 
     sendTokenResponse(user, 200, res);

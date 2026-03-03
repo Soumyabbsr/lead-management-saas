@@ -72,16 +72,56 @@ const updateTenant = asyncHandler(async (req, res) => {
         throw new Error('Tenant not found');
     }
 
-    // Toggle suspend status if provided
-    if (req.body.status) {
-        tenant.status = req.body.status;
+    const { email, ownerName, phone, name, status, planId, employeeLimit, leadLimit, planExpiryDate } = req.body;
+
+    // If email is provided, we must check if it's already used by another user
+    let normalizedEmail = email ? email.toLowerCase().trim() : tenant.email;
+
+    if (email && normalizedEmail !== tenant.email.toLowerCase().trim()) {
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) {
+            res.status(400);
+            throw new Error('Email is already in use by another account');
+        }
     }
 
-    // Update other fields
-    tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-        runValidators: true,
-    });
+    // Toggle suspend status if provided
+    if (status) {
+        tenant.status = status;
+        if (status === 'suspended') {
+            tenant.planStatus = 'suspended';
+        } else if (status === 'active' && tenant.planStatus === 'suspended') {
+            tenant.planStatus = 'active';
+        }
+    }
+
+    // Update core tenant fields
+    tenant.name = name || tenant.name;
+    tenant.ownerName = ownerName || tenant.ownerName;
+    tenant.email = normalizedEmail;
+    tenant.phone = phone || tenant.phone;
+
+    if (planId) tenant.planId = planId;
+    if (employeeLimit !== undefined) tenant.employeeLimit = employeeLimit;
+    if (leadLimit !== undefined) tenant.leadLimit = leadLimit;
+    if (planExpiryDate) tenant.planExpiryDate = planExpiryDate;
+
+    await tenant.save();
+
+    // Synchronize these changes with the Tenant's Admin User account
+    const adminUser = await User.findOne({ tenantId: tenant._id, role: 'admin' });
+    if (adminUser) {
+        if (ownerName) adminUser.name = ownerName;
+        if (email) adminUser.email = normalizedEmail;
+        if (phone) adminUser.phone = phone;
+        // User status can sync with Tenant status roughly, or remain distinct, but useful to disable login
+        if (status === 'suspended') {
+            adminUser.status = 'Inactive';
+        } else if (status === 'active') {
+            adminUser.status = 'Active';
+        }
+        await adminUser.save();
+    }
 
     res.status(200).json({ success: true, data: tenant });
 });
@@ -103,9 +143,47 @@ const deleteTenant = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Tenant soft deleted' });
 });
 
+// @desc    Reset a tenant owner's password
+// @route   PUT /api/super-admin/tenants/:id/reset-password
+// @access  Private (Super Admin)
+const resetTenantPassword = asyncHandler(async (req, res) => {
+    const { password } = req.body;
+
+    if (!password) {
+        res.status(400);
+        throw new Error('Please provide a new password');
+    }
+
+    const tenant = await Tenant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+
+    if (!tenant) {
+        res.status(404);
+        throw new Error('Tenant not found');
+    }
+
+    // Find the primary admin user for this tenant
+    const adminUser = await User.findOne({ tenantId: tenant._id, role: 'admin' });
+
+    if (!adminUser) {
+        res.status(404);
+        throw new Error('Primary admin user not found for this tenant');
+    }
+
+    // Update password (the pre-save hook in User model will handle hashing)
+    adminUser.password = password;
+    await adminUser.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Password reset successful',
+        email: adminUser.email
+    });
+});
+
 module.exports = {
     getTenants,
     createTenant,
     updateTenant,
     deleteTenant,
+    resetTenantPassword,
 };

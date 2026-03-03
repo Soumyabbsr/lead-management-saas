@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/lib/apiClient';
 import { X } from 'lucide-react';
 
@@ -11,12 +11,15 @@ interface AddTenantModalProps {
 }
 
 export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenantModalProps) {
+    const [plans, setPlans] = useState<any[]>([]);
+
     const [formData, setFormData] = useState({
         name: '',
         ownerName: '',
         email: '',
         phone: '',
         password: '',
+        planId: '',
         employeeLimit: 5,
         leadLimit: 100,
         planExpiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
@@ -26,6 +29,46 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
     const [error, setError] = useState('');
     const [successData, setSuccessData] = useState<any>(null);
 
+    // Fetch active plans on mount
+    useEffect(() => {
+        if (isOpen) {
+            fetchPlans();
+        }
+    }, [isOpen]);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await api.get('/super-admin/plans');
+            if (res.data.success) {
+                const activePlans = res.data.data.filter((p: any) => p.isActive);
+                setPlans(activePlans);
+
+                // Pre-select first plan if available
+                if (activePlans.length > 0 && !formData.planId) {
+                    handlePlanSelect(activePlans[0]._id, activePlans);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch plans', error);
+        }
+    };
+
+    const handlePlanSelect = (selectedPlanId: string, availablePlans = plans) => {
+        const plan = availablePlans.find((p: any) => p._id === selectedPlanId);
+        if (plan) {
+            setFormData(prev => ({
+                ...prev,
+                planId: plan._id,
+                employeeLimit: plan.maxEmployees,
+                leadLimit: plan.maxLeads,
+                // Default to 1 year expiry
+                planExpiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, planId: selectedPlanId }));
+        }
+    };
+
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +77,6 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
         setLoading(true);
 
         try {
-            // Need a plan ID realistically, but backend will just make it null if omitted for Custom plans right now
             const payload = {
                 ...formData,
                 status: 'active',
@@ -61,7 +103,7 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
 
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '32px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '32px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
                 <button
                     onClick={() => {
                         setSuccessData(null);
@@ -173,9 +215,24 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
 
                             <hr style={{ borderTop: '1px solid #e2e8f0', borderBottom: 'none', margin: '8px 0' }} />
 
+                            <div>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Subscription Plan</label>
+                                <select
+                                    required
+                                    value={formData.planId}
+                                    onChange={e => handlePlanSelect(e.target.value)}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' }}
+                                >
+                                    <option value="" disabled>Select a plan...</option>
+                                    {plans.map(p => (
+                                        <option key={p._id} value={p._id}>{p.name} (Up to {p.maxEmployees} Emp, {p.maxLeads} Leads)</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Emp. Limit</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Emp. Limit <span style={{ color: '#94a3b8', fontWeight: 400 }}>(Override)</span></label>
                                     <input
                                         required
                                         type="number"
@@ -186,7 +243,7 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Lead Limit</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Lead Limit <span style={{ color: '#94a3b8', fontWeight: 400 }}>(Override)</span></label>
                                     <input
                                         required
                                         type="number"
@@ -218,8 +275,8 @@ export default function AddTenantModal({ isOpen, onClose, onSuccess }: AddTenant
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    style={{ padding: '10px 24px', background: '#4f46e5', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                                    disabled={loading || !formData.planId}
+                                    style={{ padding: '10px 24px', background: '#4f46e5', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: (loading || !formData.planId) ? 'not-allowed' : 'pointer', opacity: (loading || !formData.planId) ? 0.7 : 1 }}
                                 >
                                     {loading ? 'Creating...' : 'Create Tenant'}
                                 </button>

@@ -4,6 +4,7 @@ const {
     createTenant,
     updateTenant,
     deleteTenant,
+    resetTenantPassword,
 } = require('./superAdmin.controller');
 
 const { protect, authorize } = require('../../middlewares/auth.middleware');
@@ -21,5 +22,7 @@ router.route('/tenants')
 router.route('/tenants/:id')
     .put(updateTenant)
     .delete(deleteTenant);
+
+router.put('/tenants/:id/reset-password', resetTenantPassword);
 
 module.exports = router;

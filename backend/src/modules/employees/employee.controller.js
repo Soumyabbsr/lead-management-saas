@@ -29,9 +29,21 @@ const getEmployee = asyncHandler(async (req, res) => {
 const createEmployee = asyncHandler(async (req, res) => {
     // Check limits
     const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+        res.status(404);
+        throw new Error('Tenant not found');
+    }
+
     if (tenant.currentEmployeeCount >= tenant.employeeLimit) {
         res.status(403);
         throw new Error('Employee limit reached for this plan');
+    }
+
+    // Role Enforcement: Tenant Admins cannot create other admins or super admins
+    let assignedRole = req.body.role || 'sales';
+    if (!['sales', 'field_agent'].includes(assignedRole)) {
+        res.status(400);
+        throw new Error('Invalid role. Must be sales or field_agent');
     }
 
     // Check if email exists
@@ -41,7 +53,11 @@ const createEmployee = asyncHandler(async (req, res) => {
         throw new Error('User with this email already exists');
     }
 
-    const employee = await User.create({ ...req.body, tenantId: req.user.tenantId });
+    const employee = await User.create({
+        ...req.body,
+        role: assignedRole,
+        tenantId: req.user.tenantId
+    });
 
     // Increment tenant counter
     tenant.currentEmployeeCount += 1;

@@ -37,10 +37,27 @@ const protect = asyncHandler(async (req, res, next) => {
             throw new Error('User account is inactive');
         }
 
+        // Verify Tenant status for all non super_admins
+        if (req.user.role !== 'super_admin' && req.user.tenantId) {
+            const Tenant = require('../models/Tenant');
+            const tenant = await Tenant.findById(req.user.tenantId);
+
+            if (tenant && tenant.status === 'suspended') {
+                res.status(403);
+                throw new Error('Account Suspended. API access denied.');
+            }
+            if (tenant && tenant.isDeleted) {
+                res.status(403);
+                throw new Error('Account Deleted. API access denied.');
+            }
+        }
+
         next();
     } catch (err) {
-        res.status(401);
-        throw new Error('Not authorized to access this route');
+        // Distinguish between our custom thrown errors and JWT verification errors
+        const statusCode = res.statusCode === 200 ? 401 : res.statusCode;
+        res.status(statusCode);
+        throw new Error(err.message === 'jwt malformed' || err.message === 'invalid signature' ? 'Not authorized to access this route' : err.message);
     }
 });
 
