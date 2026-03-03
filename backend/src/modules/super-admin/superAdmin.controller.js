@@ -8,7 +8,8 @@ const mongoose = require('mongoose');
 // @route   GET /api/super-admin/tenants
 // @access  Private (Super Admin)
 const getTenants = asyncHandler(async (req, res) => {
-    const tenants = await Tenant.find({ isDeleted: false }).populate('planId', 'name');
+    // using $ne: true accommodates old records missing the isDeleted field entirely
+    const tenants = await Tenant.find({ isDeleted: { $ne: true } }).populate('planId', 'name');
     res.status(200).json({ success: true, count: tenants.length, data: tenants });
 });
 
