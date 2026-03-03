@@ -133,15 +133,15 @@ export default function LeadsPage() {
     return (
         <>
             <TopBar />
-            <div style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
+            <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9', minHeight: 0 }}>
 
                 {/* Page header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0d1b2e' }}>My Leads</h1>
                         <p style={{ margin: '2px 0 0', fontSize: 12.5, color: '#64748b' }}>{leads.length} leads · {currentUser.name} · Areas: {currentUser.assignedAreas.join(', ')}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: 10, padding: 4 }}>
                             <button onClick={() => setViewMode('list')} style={{ background: viewMode === 'list' ? '#fff' : 'transparent', color: viewMode === 'list' ? '#0d1b2e' : '#64748b', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <LayoutList size={14} /> List
@@ -202,7 +202,7 @@ export default function LeadsPage() {
 
                 {/* Bulk action bar (only in list view) */}
                 {viewMode === 'list' && selectedIds.length > 0 && (
-                    <div style={{ background: '#0d1b2e', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: '#0d1b2e', borderRadius: 10, padding: '10px 16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
                         <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{selectedIds.length} selected</span>
                         <select value={bulkStage} onChange={e => setBulkStage(e.target.value as LeadStage)}
                             style={{ padding: '5px 10px', borderRadius: 7, border: 'none', fontSize: 13, color: '#0d1b2e' }}>

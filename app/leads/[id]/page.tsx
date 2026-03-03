@@ -130,7 +130,7 @@ export default function LeadDetailPage() {
     return (
         <>
             <TopBar />
-            <div style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
+            <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
 
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -155,14 +155,14 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* 2-col grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
+                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
 
                     {/* LEFT */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
                         {/* A. Basic Info */}
                         <Card title="Basic Info">
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                            <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                 <InfoRow label="Full Name" value={lead.name} />
                                 <InfoRow label="Mobile" value={lead.phone} />
                                 <InfoRow label="WhatsApp" value={lead.whatsapp || '—'} />
@@ -172,7 +172,7 @@ export default function LeadDetailPage() {
 
                         {/* B. Requirement Details */}
                         <Card title="Requirement Details">
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                            <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                 <InfoRow label="Preferred Area" value={lead.preferredArea || '—'} />
                                 <InfoRow label="Budget" value={lead.budget ? `₹${lead.budget.toLocaleString('en-IN')}/mo` : '—'} />
                                 <InfoRow label="Property Type" value={lead.propertyType} />
@@ -205,7 +205,7 @@ export default function LeadDetailPage() {
                         {/* Booking details if booked */}
                         {lead.stage === 'Booked' && lead.bookingDetails && (
                             <Card title="Booking Details">
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                     <InfoRow label="Property" value={lead.bookingDetails.propertyName} />
                                     <InfoRow label="Bed Assigned" value={lead.bookingDetails.bedAssigned} />
                                     <InfoRow label="Advance Paid" value={`₹${lead.bookingDetails.advancePaid.toLocaleString('en-IN')}`} />
@@ -261,7 +261,7 @@ export default function LeadDetailPage() {
                         {/* F. Follow-up Scheduler */}
                         <Card title="Schedule Follow-up">
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                     <div>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>Date</label>
                                         <input type="date" style={inStyle} value={followUpForm.date} onChange={e => setFollowUpForm(p => ({ ...p, date: e.target.value }))} />
@@ -282,7 +282,7 @@ export default function LeadDetailPage() {
                         {/* G. Visit Scheduler */}
                         <Card title="Schedule Visit">
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                     <div>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>Visit Date</label>
                                         <input type="date" style={inStyle} value={visitForm.date} onChange={e => setVisitForm(p => ({ ...p, date: e.target.value }))} />
@@ -298,7 +298,7 @@ export default function LeadDetailPage() {
                                         {salesAgents.map(a => <option key={a} value={a}>{a}</option>)}
                                     </select>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                     <div>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>PG / Property Name</label>
                                         <input type="text" style={inStyle} placeholder="e.g. Skyline PG" value={visitForm.propertyName} onChange={e => setVisitForm(p => ({ ...p, propertyName: e.target.value }))} />
