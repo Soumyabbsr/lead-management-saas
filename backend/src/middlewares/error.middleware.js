@@ -3,12 +3,17 @@ const errorHandler = (err, req, res, next) => {
 
     res.status(statusCode);
 
-    res.json({
+    const response = {
         success: false,
         message: err.message,
-        // Include stack trace only in development
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
+    };
+
+    // Include stack trace only in development
+    if (process.env.NODE_ENV !== 'production') {
+        response.stack = err.stack;
+    }
+
+    res.json(response);
 };
 
 module.exports = {

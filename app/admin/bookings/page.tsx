@@ -10,6 +10,7 @@ import { BookingDetails } from '@/types/activity';
 import BookingModal from '@/components/leads/BookingModal';
 import { Eye, Phone, MessageCircle, Edit2, XCircle, Search } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import DropdownMenu, { DropdownAction } from '@/components/ui/DropdownMenu';
 
 export default function AdminBookingsPage() {
     const router = useRouter();
@@ -121,32 +122,14 @@ export default function AdminBookingsPage() {
                                         onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
-                                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0d1b2e', fontSize: 13.5 }}>{lead.name}</td>
-                                        <td style={{ padding: '12px 14px', color: '#475569', fontSize: 12.5, fontFamily: 'monospace' }}>+91 {lead.phone}</td>
-
-                                        <td style={{ padding: '12px 14px', color: '#0d1b2e', fontWeight: 600 }}>{lead.bookingDetails?.propertyName ?? '—'}</td>
-                                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{lead.bookingDetails?.bedAssigned ?? '—'}</td>
-                                        <td style={{ padding: '12px 14px', color: '#059669', fontWeight: 700 }}>
-                                            {lead.bookingDetails ? `₹${lead.bookingDetails.advancePaid.toLocaleString('en-IN')}` : '—'}
-                                        </td>
-
-                                        <td style={{ padding: '12px 14px', color: '#475569' }}>
-                                            {lead.bookingDetails ? new Date(lead.bookingDetails.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                                        </td>
-
-                                        <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12.5 }}>{lead.assignedTo}</td>
-
                                         <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
-                                            <div style={{ display: 'flex', gap: 4 }}>
-                                                <button onClick={() => setEditBookingLead(lead)} title="Edit Booking"
-                                                    style={{ width: 28, height: 28, borderRadius: 7, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', cursor: 'pointer' }}>
-                                                    <Edit2 size={12} />
-                                                </button>
-                                                <button onClick={() => setCancelBookingLead(lead)} title="Cancel Booking"
-                                                    style={{ width: 28, height: 28, borderRadius: 7, background: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', cursor: 'pointer' }}>
-                                                    <XCircle size={12} />
-                                                </button>
-                                            </div>
+                                            <DropdownMenu
+                                                actions={[
+                                                    { label: 'View Details', icon: <Eye size={14} />, onClick: () => router.push(`/admin/leads/${lead.id}`) },
+                                                    { label: 'Edit Booking', icon: <Edit2 size={14} />, onClick: () => setEditBookingLead(lead) },
+                                                    { label: 'Cancel Booking', icon: <XCircle size={14} />, danger: true, onClick: () => setCancelBookingLead(lead) }
+                                                ]}
+                                            />
                                         </td>
                                     </tr>
                                 ))}

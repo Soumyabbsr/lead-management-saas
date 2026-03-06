@@ -46,4 +46,8 @@ const activitySchema = new mongoose.Schema(
     }
 );
 
+// Performance Indexes for timeline fetching
+activitySchema.index({ tenantId: 1, leadId: 1, createdAt: -1 });
+activitySchema.index({ performedBy: 1 });
+
 module.exports = mongoose.model('Activity', activitySchema);

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutGrid, Users, UserCog, MapPin, BookOpen, UserCircle,
-    BarChart2, Activity, Settings, ArrowLeft, ShieldCheck, Clock
+    BarChart2, Activity, Settings, ArrowLeft, ShieldCheck, Clock, Menu, X
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
+import { useSidebar } from '@/context/SidebarContext';
+import { useEffect, useState } from 'react';
 
 const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -26,6 +27,15 @@ export default function AdminSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const { currentUser } = useAuth();
+    const { isOpen, setIsOpen } = useSidebar();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     useEffect(() => {
         if (currentUser && currentUser.role !== 'admin') {
@@ -33,17 +43,43 @@ export default function AdminSidebar() {
         }
     }, [currentUser, router]);
 
+    // Close drawer on route change
+    useEffect(() => { setIsOpen(false); }, [pathname, setIsOpen]);
+
     if (!currentUser) return null;
 
-    return (
-        <aside style={{
-            width: 208, minWidth: 208,
-            background: '#0a0f1e',
-            display: 'flex', flexDirection: 'column',
-            padding: '0 12px 20px',
-            position: 'sticky', top: 0, height: '100vh',
-            overflowY: 'auto', flexShrink: 0, zIndex: 20,
-        }}>
+    const sidebarContent = (
+        <aside
+            className={`sidebar-mobile ${isOpen ? 'open' : ''}`}
+            style={{
+                width: 208,
+                minWidth: 208,
+                background: '#0a0f1e',
+                display: 'flex', flexDirection: 'column',
+                padding: '0 12px 20px',
+                height: '100vh',
+                overflowY: 'auto',
+                flexShrink: 0,
+                zIndex: 50,
+                position: isMobile ? 'fixed' : 'sticky',
+                top: 0, left: 0,
+            }}>
+            {/* Close button on mobile */}
+            {isMobile && (
+                <button
+                    onClick={() => setIsOpen(false)}
+                    style={{
+                        position: 'absolute', top: 14, right: 12,
+                        background: 'rgba(255,255,255,0.08)', border: 'none',
+                        borderRadius: 8, width: 32, height: 32,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', color: '#fff',
+                    }}
+                >
+                    <X size={16} />
+                </button>
+            )}
+
             {/* Brand */}
             <div style={{ padding: '20px 6px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -86,5 +122,33 @@ export default function AdminSidebar() {
                 </Link>
             </div>
         </aside>
+    );
+
+    return (
+        <>
+            <div
+                className={`sidebar-overlay ${isOpen ? 'open' : ''} desktop-hidden`}
+                onClick={() => setIsOpen(false)}
+            />
+            {/* Hamburger button — only on mobile */}
+            {isMobile && (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    style={{
+                        position: 'fixed', top: 12, left: 12, zIndex: 40,
+                        width: 40, height: 40, borderRadius: 10,
+                        background: '#0a0f1e', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                        color: '#fff',
+                    }}
+                    aria-label="Open menu"
+                >
+                    <Menu size={18} />
+                </button>
+            )}
+
+            {sidebarContent}
+        </>
     );
 }

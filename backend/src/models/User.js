@@ -56,6 +56,10 @@ const userSchema = new mongoose.Schema(
     }
 );
 
+// Performance Indexes
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ status: 1 });
+
 // Encrypt password using bcrypt before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {

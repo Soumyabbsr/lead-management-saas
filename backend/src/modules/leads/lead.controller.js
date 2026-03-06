@@ -35,19 +35,18 @@ const assignLead = async (preferredArea, tenantId) => {
 const getLeads = asyncHandler(async (req, res) => {
     let query;
 
+    // Remove heavy activities array population to fix massive N+1 lag
     // Admin can see all leads, Sales can see only their assigned leads
-    const activitiesPopulate = { path: 'activities', populate: { path: 'performedBy', select: 'name' } };
-
     if (req.user.role === 'admin') {
         query = Lead.find({ tenantId: req.user.tenantId })
             .populate('assignedTo', 'name email')
-            .populate(activitiesPopulate)
-            .sort('-createdAt');
+            .sort('-createdAt')
+            .lean(); // Use lean to avoid Mongoose document instantiation (5-10x speedup)
     } else if (req.user.role === 'sales') {
         query = Lead.find({ assignedTo: req.user._id, tenantId: req.user.tenantId })
             .populate('assignedTo', 'name email')
-            .populate(activitiesPopulate)
-            .sort('-createdAt');
+            .sort('-createdAt')
+            .lean();
     } else {
         res.status(403);
         throw new Error('Not authorized to access leads list');
@@ -62,8 +61,9 @@ const getLeads = asyncHandler(async (req, res) => {
 // @access  Private
 const getLead = asyncHandler(async (req, res) => {
     const lead = await Lead.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
-        .populate('activities')
-        .populate('assignedTo', 'name email');
+        .populate({ path: 'activities', populate: { path: 'performedBy', select: 'name' } }) // Populate specifically for single view
+        .populate('assignedTo', 'name email')
+        .lean();
 
     if (!lead) {
         res.status(404);

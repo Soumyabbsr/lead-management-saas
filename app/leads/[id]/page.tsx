@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useLeadStore } from '@/store/useLeadStore';
 import { useToast } from '@/context/ToastContext';
@@ -84,6 +84,13 @@ export default function LeadDetailPage() {
     const [reassignTo, setReassignTo] = useState('');
     const [showPostVisit, setShowPostVisit] = useState(false);
     const [showBooking, setShowBooking] = useState(false);
+
+    // Fetch the heavy timeline & notes strictly for this lead
+    useEffect(() => {
+        if (id) {
+            useLeadStore.getState().fetchLeadDetails(id);
+        }
+    }, [id]);
 
     if (!lead) {
         return (
