@@ -77,8 +77,13 @@ const scheduleVisit = asyncHandler(async (req, res) => {
         const now = new Date();
         const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
+        console.log(`[Visit] DEBUG: date="${date}", time="${time}"`);
+        console.log(`[Visit] DEBUG: visitDateTime=${visitDateTime.toISOString()}, now=${now.toISOString()}, twoHrs=${twoHoursFromNow.toISOString()}`);
+        console.log(`[Visit] DEBUG: isWithin2hrs=${visitDateTime <= twoHoursFromNow}, isFuture=${visitDateTime > now}`);
+
         if (visitDateTime <= twoHoursFromNow && visitDateTime > now) {
             const recipientPhone = lead.whatsapp || lead.phone;
+            console.log(`[Visit] DEBUG: recipientPhone=${recipientPhone}`);
             if (recipientPhone) {
                 // Get field agent's phone for staff_number
                 const agent = await User.findById(fieldAgent).select('phone');
@@ -110,6 +115,8 @@ const scheduleVisit = asyncHandler(async (req, res) => {
                     console.log(`[Visit] ⚠️ Instant reminder failed: ${result.error}`);
                 }
             }
+        } else {
+            console.log(`[Visit] Skipped: visit is not within 2-hour window`);
         }
     } catch (whatsappErr) {
         // Don't fail the visit creation if WhatsApp fails
