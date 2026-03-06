@@ -7,7 +7,6 @@ import { useEmployeeStore } from '@/store/useEmployeeStore';
 import { useToast } from '@/context/ToastContext';
 import { Lead, LeadStage } from '@/types/lead';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import DropdownMenu, { DropdownAction } from '@/components/ui/DropdownMenu';
 import { Phone, MessageCircle, Eye, Trash2, Search } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
@@ -277,14 +276,24 @@ export default function AdminLeadsPage() {
 
                                         {/* Actions */}
                                         <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
-                                            <DropdownMenu
-                                                actions={[
-                                                    { label: 'View Details', icon: <Eye size={14} />, onClick: () => router.push(`/admin/leads/${lead.id}`) },
-                                                    { label: 'Call', icon: <Phone size={14} />, href: `tel:${lead.phone}` },
-                                                    { label: 'WhatsApp', icon: <MessageCircle size={14} />, href: `https://wa.me/91${lead.phone}` },
-                                                    { label: 'Delete Lead', icon: <Trash2 size={14} />, danger: true, onClick: () => setDeleteId(lead.id) },
-                                                ]}
-                                            />
+                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                <a href={`tel:${lead.phone}`} title="Call"
+                                                    style={{ width: 30, height: 30, borderRadius: 7, background: '#ecfdf5', border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16a34a', textDecoration: 'none' }}>
+                                                    <Phone size={13} />
+                                                </a>
+                                                <a href={`https://wa.me/91${lead.phone}`} target="_blank" rel="noreferrer" title="WhatsApp"
+                                                    style={{ width: 30, height: 30, borderRadius: 7, background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16a34a', textDecoration: 'none' }}>
+                                                    <MessageCircle size={13} />
+                                                </a>
+                                                <button onClick={() => router.push(`/admin/leads/${lead.id}`)} title="View"
+                                                    style={{ width: 30, height: 30, borderRadius: 7, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', cursor: 'pointer' }}>
+                                                    <Eye size={13} />
+                                                </button>
+                                                <button onClick={() => setDeleteId(lead.id)} title="Delete"
+                                                    style={{ width: 30, height: 30, borderRadius: 7, background: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', cursor: 'pointer' }}>
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

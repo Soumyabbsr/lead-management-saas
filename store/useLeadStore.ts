@@ -14,7 +14,6 @@ interface LeadStore {
     error: string | null;
 
     fetchLeads: () => Promise<void>;
-    fetchLeadDetails: (leadId: string) => Promise<void>;
     addLead: (lead: Omit<Lead, 'id' | 'notes' | 'timeline' | 'lastActivity'>) => Promise<void>;
     deleteLead: (leadId: string) => Promise<void>;
     updateLead: (leadId: string, data: Partial<Lead>) => Promise<void>;
@@ -68,8 +67,7 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
                     ...l,
                     id: l._id,
                     assignedTo: assignedToName,
-                    // If activities are missing (lean list view), default to empty arrays
-                    // Once a lead is opened, fetchLeadDetails will populate these
+                    // Map MongoDB Activity fields to frontend timeline fields
                     timeline: (l.activities || []).map((a: any) => ({
                         id: a._id,
                         type: a.type.toLowerCase(),
@@ -89,41 +87,6 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
             set({ leads, isLoading: false });
         } catch (err: any) {
             set({ error: err.response?.data?.message || 'Failed to fetch leads', isLoading: false });
-        }
-    },
-
-    fetchLeadDetails: async (leadId: string) => {
-        try {
-            const res = await api.get(`/leads/${leadId}`);
-            const l = res.data.data;
-            const assignedToName = typeof l.assignedTo === 'object' && l.assignedTo !== null
-                ? l.assignedTo.name
-                : l.assignedTo || '';
-
-            const detailedLead = {
-                ...l,
-                id: l._id,
-                assignedTo: assignedToName,
-                timeline: (l.activities || []).map((a: any) => ({
-                    id: a._id,
-                    type: a.type.toLowerCase(),
-                    text: a.description,
-                    timestamp: a.createdAt,
-                    by: a.performedBy?.name || 'Unknown'
-                })),
-                notes: (l.activities || []).filter((a: any) => a.type === 'NOTE_ADDED').map((a: any) => ({
-                    id: a._id,
-                    text: a.description?.replace('Note: ', '') || a.description || '',
-                    createdAt: a.createdAt,
-                    by: a.performedBy?.name || 'Unknown'
-                }))
-            };
-
-            set(s => ({
-                leads: s.leads.map(lead => lead.id === leadId ? detailedLead : lead)
-            }));
-        } catch (err: any) {
-            console.error('Failed to fetch lead details', err);
         }
     },
 
@@ -172,7 +135,7 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
             }));
 
             await api.put(`/leads/${leadId}`, { stage });
-            await get().fetchLeadDetails(leadId); // Opt to just fetch the details for that lead instead of all leads
+            await get().fetchLeads();
         } catch (err: any) {
             console.error(err);
             throw err;
@@ -248,7 +211,7 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
     addNote: async (leadId, text) => {
         try {
             await api.post(`/leads/${leadId}/notes`, { noteText: text });
-            await get().fetchLeadDetails(leadId);
+            await get().fetchLeads();
         } catch (err: any) {
             console.error(err);
             throw err;

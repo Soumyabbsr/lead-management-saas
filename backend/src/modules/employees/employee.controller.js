@@ -7,9 +7,7 @@ const Tenant = require('../../models/Tenant');
 // @route   GET /api/employees
 // @access  Private/Admin
 const getEmployees = asyncHandler(async (req, res) => {
-    const employees = await User.find({ role: { $ne: 'super_admin' }, tenantId: req.user.tenantId })
-        .select('name email phone role status assignedAreas monthlyTarget createdAt')
-        .lean();
+    const employees = await User.find({ role: { $ne: 'super_admin' }, tenantId: req.user.tenantId }); // Or get everyone
     res.status(200).json({ success: true, count: employees.length, data: employees });
 });
 
@@ -17,7 +15,7 @@ const getEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees/:id
 // @access  Private/Admin
 const getEmployee = asyncHandler(async (req, res) => {
-    const employee = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId }).lean();
+    const employee = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
     if (!employee) {
         res.status(404);
         throw new Error('Employee not found');

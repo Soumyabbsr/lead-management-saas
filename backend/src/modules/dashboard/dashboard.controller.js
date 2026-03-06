@@ -1,8 +1,14 @@
 const asyncHandler = require('express-async-handler');
 const Lead = require('../../models/Lead');
+const Booking = require('../../models/Booking');
+const Visit = require('../../models/Visit');
 const User = require('../../models/User');
 
-// Helper to check if a date is today (IST-safe)
+function isInactive(date) {
+    return (Date.now() - new Date(date).getTime()) > 24 * 60 * 60 * 1000;
+}
+
+// Helper to reliably check if a date is "today" regardless of UTC offsets for early morning IST times
 function isToday(dateInput) {
     if (!dateInput) return false;
     const date = new Date(dateInput);
@@ -16,52 +22,60 @@ function isToday(dateInput) {
 // @route   GET /api/dashboard/admin
 // @access  Private (Admin)
 const getAdminDashboard = asyncHandler(async (req, res) => {
-    const { tenantId } = req.user;
+    const allLeads = await Lead.find({ tenantId: req.user.tenantId });
+    // Visits and Bookings are embedded in Leads, so no need to query separate collections
+    const salesAgents = await User.find({ tenantId: req.user.tenantId, role: 'sales' });
+
+    const totalLeads = allLeads.length;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+
+    const newToday = allLeads.filter(l => new Date(l.createdAt) >= todayStart).length;
+
+    // Visits today
+    const visitsToday = allLeads.filter(l =>
+        l.visitDate && isToday(l.visitDate) && l.visitStatus !== 'Cancelled'
+    ).length;
+
+    // Bookings this month
     const firstDay = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+    const bookingsThisMonth = allLeads.filter(l =>
+        l.stage === 'Booked' && l.bookingDetails && new Date(l.bookingDetails.bookingDate || l.updatedAt) >= firstDay
+    ).length;
 
-    // Run all MongoDB aggregations in parallel — no full collection scan
-    const [
-        totalLeads,
-        newToday,
-        visitsToday,
-        bookingsThisMonth,
-        overdueCount,
-        pipeline,
-        salesAgents,
-        leaderboardLeads,
-    ] = await Promise.all([
-        Lead.countDocuments({ tenantId }),
-        Lead.countDocuments({ tenantId, createdAt: { $gte: todayStart } }),
-        Lead.countDocuments({ tenantId, visitDate: { $gte: todayStart, $lt: new Date(todayStart.getTime() + 86400000) }, visitStatus: { $ne: 'Cancelled' } }),
-        Lead.countDocuments({ tenantId, stage: 'Booked', updatedAt: { $gte: firstDay } }),
-        Lead.countDocuments({ tenantId, followUpDue: { $lt: new Date() }, stage: { $nin: ['Booked', 'Lost'] } }),
-        Lead.aggregate([
-            { $match: { tenantId: req.user.tenantId } },
-            { $group: { _id: '$stage', count: { $sum: 1 } } }
-        ]),
-        User.find({ tenantId, role: 'sales' }).select('name monthlyTarget').lean(),
-        Lead.find({ tenantId, stage: 'Booked' }).select('assignedTo').lean(),
-    ]);
+    // Overdue: followUpDue is past and stage isn't booked/lost
+    const overdueCount = allLeads.filter(l =>
+        l.followUpDue && new Date(l.followUpDue) < new Date() && l.stage !== 'Booked' && l.stage !== 'Lost'
+    ).length;
 
-    // Build pipeline map
-    const pipelineMap = { New: 0, Contacted: 0, Visit: 0, Negotiation: 0, Booked: 0, Lost: 0 };
-    pipeline.forEach(p => { if (pipelineMap[p._id] !== undefined) pipelineMap[p._id] = p.count; });
+    // Inactive > 24h
+    const inactiveCount = allLeads.filter(l => isInactive(l.lastActivity) && l.stage !== 'Booked' && l.stage !== 'Lost').length;
 
-    const totalBookings = pipelineMap.Booked;
+    const totalBookings = allLeads.filter(l => l.stage === 'Booked').length;
     const convRate = totalLeads === 0 ? 0 : Math.round((totalBookings / totalLeads) * 100);
 
-    // Build leaderboard from pre-fetched booked leads
+    const pipeline = {
+        New: allLeads.filter(l => l.stage === 'New').length,
+        Contacted: allLeads.filter(l => l.stage === 'Contacted').length,
+        Visit: allLeads.filter(l => l.stage === 'Visit').length,
+        Negotiation: allLeads.filter(l => l.stage === 'Negotiation').length,
+        Booked: allLeads.filter(l => l.stage === 'Booked').length,
+        Lost: allLeads.filter(l => l.stage === 'Lost').length,
+    };
+
+    // Employee Leaderboard
     const leaderboard = salesAgents.map(agent => {
-        const agentBookingCount = leaderboardLeads.filter(l => l.assignedTo.toString() === agent._id.toString()).length;
+        const agentLeads = allLeads.filter(l => l.assignedTo.toString() === agent._id.toString());
+        const agentBookings = agentLeads.filter(l => l.stage === 'Booked');
+
+        const empConvRate = agentLeads.length === 0 ? 0 : Math.round((agentBookings.length / agentLeads.length) * 100);
         return {
             id: agent._id,
             name: agent.name,
-            bookings: agentBookingCount,
+            bookings: agentBookings.length,
             target: agent.monthlyTarget || 0,
-            convRate: 0, // Avoiding N+1: full convRate would need all agent leads; kept simple
+            convRate: empConvRate
         };
     }).sort((a, b) => b.bookings - a.bookings);
 
@@ -74,11 +88,11 @@ const getAdminDashboard = asyncHandler(async (req, res) => {
                 visitsToday,
                 bookingsThisMonth,
                 overdueCount,
-                inactiveCount: 0,
+                inactiveCount,
                 convRate,
             },
-            pipeline: pipelineMap,
-            leaderboard,
+            pipeline,
+            leaderboard
         }
     });
 });
@@ -87,9 +101,7 @@ const getAdminDashboard = asyncHandler(async (req, res) => {
 // @route   GET /api/dashboard/sales
 // @access  Private (Sales)
 const getSalesDashboard = asyncHandler(async (req, res) => {
-    const myLeads = await Lead.find({ assignedTo: req.user._id, tenantId: req.user.tenantId })
-        .select('stage followUpDue visitDate visitStatus')
-        .lean();
+    const myLeads = await Lead.find({ assignedTo: req.user._id });
 
     const stageCounts = {
         New: myLeads.filter(l => l.stage === 'New').length,

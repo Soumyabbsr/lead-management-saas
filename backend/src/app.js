@@ -1,45 +1,39 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const mongoSanitize = require('express-mongo-sanitize');
-const rateLimit = require('express-rate-limit');
 const { errorHandler } = require('./middlewares/error.middleware');
+const User = require('./models/User');   // ✅ ADD THIS LINE
 
 const app = express();
 
-// Security and Optimization Middlewares
-app.use(helmet()); // Secure HTTP headers
-app.use(compression()); // Compress responses for speed
-app.use(cors({ origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || '*' : '*' })); // Allow frontend origin
-app.use(mongoSanitize()); // Prevent NoSQL Injection
+// Middlewares
+app.use(cors({ origin: '*' })); // Allow frontend origin
 
-// General API rate limiter
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
-  message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes' }
-});
-app.use('/api/', apiLimiter);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Strict auth rate limiter — 5 attempts per 15 minutes on login
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  skipSuccessfulRequests: true,
-  message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' }
-});
-app.use('/api/auth/login', authLimiter);
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Basic health check
+// Basic route
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'PG CRM API is running' });
 });
 
-// Routes
+// 🔥 TEMP ADMIN CREATION ROUTE (ADD THIS BLOCK)
+app.get('/create-admin', async (req, res) => {
+  try {
+    await User.create({
+      name: "Super Admin",
+      email: "admin@pgcrm.com",
+      password: "Admin@123",  // plain password (auto hashed)
+      role: "super_admin",
+      status: "Active"
+    });
+
+    res.json({ success: true, message: "Admin created successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Import and mount routes here
 app.use('/api/auth', require('./modules/auth/auth.routes'));
 app.use('/api/employees', require('./modules/employees/employee.routes'));
 app.use('/api/leads', require('./modules/leads/lead.routes'));

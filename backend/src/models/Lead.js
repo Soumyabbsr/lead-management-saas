@@ -95,9 +95,6 @@ const leadSchema = new mongoose.Schema(
 );
 
 leadSchema.index({ tenantId: 1, stage: 1 });
-leadSchema.index({ tenantId: 1, assignedTo: 1 }); // Frequent lookup on employee dash
-leadSchema.index({ tenantId: 1, followUpDue: 1 }); // Fast overdue lead counts
-leadSchema.index({ tenantId: 1, visitDate: 1 });   // Fast visits-today counts
 
 // Virtual for getting activities associated with this lead
 leadSchema.virtual('activities', {

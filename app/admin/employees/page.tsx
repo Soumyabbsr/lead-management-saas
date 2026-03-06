@@ -6,7 +6,6 @@ import { useLeadStore } from '@/store/useLeadStore';
 import { Employee } from '@/lib/employees';
 import AddEmployeeModal from '@/components/admin/AddEmployeeModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import DropdownMenu, { DropdownAction } from '@/components/ui/DropdownMenu';
 import { Plus, Edit2, ShieldCheck, UserCheck, MapPin, Power, Trash2 } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
@@ -74,15 +73,20 @@ export default function AdminEmployeesPage() {
 
                                 {/* Actions */}
                                 <div style={{ display: 'flex', gap: 4 }}>
-                                    <DropdownMenu
-                                        actions={[
-                                            { label: 'Edit', icon: <Edit2 size={14} />, onClick: () => { setEmpToEdit(emp); setShowAdd(true); } },
-                                            ...(!isMe ? [
-                                                { label: emp.status === 'Active' ? 'Deactivate' : 'Activate', icon: <Power size={14} />, onClick: () => toggleStatus(emp.id) },
-                                                { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onClick: () => setEmpToDelete(emp) }
-                                            ] : [])
-                                        ]}
-                                    />
+                                    <button onClick={() => { setEmpToEdit(emp); setShowAdd(true); }}
+                                        style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Edit2 size={13} />
+                                    </button>
+                                    <button onClick={() => toggleStatus(emp.id)} disabled={isMe}
+                                        style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${emp.status === 'Active' ? '#fca5a5' : '#a7f3d0'}`, background: emp.status === 'Active' ? '#fef2f2' : '#ecfdf5', color: emp.status === 'Active' ? '#ef4444' : '#059669', cursor: isMe ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isMe ? 0.3 : 1 }}>
+                                        <Power size={13} />
+                                    </button>
+                                    {!isMe && (
+                                        <button onClick={() => setEmpToDelete(emp)}
+                                            style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Trash2 size={13} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
