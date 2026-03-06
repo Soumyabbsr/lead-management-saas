@@ -59,7 +59,7 @@ export default function TenantsPage() {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>Tenants</h1>
                     <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Manage SaaS vendors and subscriptions.</p>
@@ -77,7 +77,8 @@ export default function TenantsPage() {
                         gap: '8px',
                         fontSize: '14px',
                         fontWeight: 500,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                     }}
                 >
                     <Plus size={18} /> Add Tenant
