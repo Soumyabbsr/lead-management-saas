@@ -262,6 +262,10 @@ body {
     padding: 16px !important;
   }
 
+  .admin-mobile-pt {
+    padding-top: 56px !important;
+  }
+
   .sidebar-mobile {
     position: fixed !important;
     left: 0;

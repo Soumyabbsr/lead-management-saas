@@ -33,10 +33,9 @@ export default function AdminEmployeesPage() {
     }
 
     return (
-        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18, background: '#f1f5f9' }}>
-
+        <div className="responsive-padding" style={{ flex: 1, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 18, background: '#f1f5f9' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1b2e' }}>Employee Management</h1>
                     <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748b' }}>Manage roles, areas, and system access</p>
@@ -48,7 +47,7 @@ export default function AdminEmployeesPage() {
             </div>
 
             {/* Grid of employees */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
                 {employees.map(emp => {
                     const isMe = emp.role === 'admin' && emp.name === 'Soumya Admin'; // Safety hardcode for demo
 

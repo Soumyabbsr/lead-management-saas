@@ -113,7 +113,7 @@ export default function AdminLeadsPage() {
     }
 
     return (
-        <div style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
+        <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -162,7 +162,7 @@ export default function AdminLeadsPage() {
 
             {/* Bulk action bar */}
             {selectedIds.length > 0 && (
-                <div style={{ background: '#0d1b2e', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: '#0d1b2e', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{selectedIds.length} selected</span>
 
                     <div style={{ height: 24, width: 1, background: 'rgba(255,255,255,0.2)' }} />

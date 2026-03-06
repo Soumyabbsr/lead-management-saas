@@ -58,7 +58,7 @@ export default function AdminBookingsPage() {
     }
 
     return (
-        <div style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
+        <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16, background: '#f1f5f9' }}>
 
             {/* Header */}
             <div>

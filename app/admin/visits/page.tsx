@@ -62,7 +62,7 @@ export default function AdminVisitsPage() {
     }
 
     return (
-        <div style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
+        <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
