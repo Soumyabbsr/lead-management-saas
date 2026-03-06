@@ -180,10 +180,107 @@ const resetTenantPassword = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get platform stats (aggregated)
+// @route   GET /api/super-admin/stats
+// @access  Private (Super Admin)
+const getStats = asyncHandler(async (req, res) => {
+    const tenants = await Tenant.find({ isDeleted: { $ne: true } }).populate('planId', 'name priceMonthly');
+    const plans = await Plan.find();
+
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const totalTenants = tenants.length;
+    const activeTenants = tenants.filter(t => t.status === 'active').length;
+    const suspendedTenants = tenants.filter(t => t.status === 'suspended').length;
+    const expiringSoon = tenants.filter(t => t.planExpiryDate && new Date(t.planExpiryDate) <= thirtyDaysFromNow && new Date(t.planExpiryDate) >= now).length;
+
+    // Revenue estimate: sum of monthly prices of all active tenants' plans
+    let monthlyRevenue = 0;
+    tenants.forEach(t => {
+        if (t.status === 'active' && t.planId && t.planId.priceMonthly) {
+            monthlyRevenue += t.planId.priceMonthly;
+        }
+    });
+
+    // Plan distribution
+    const planDistribution = {};
+    tenants.forEach(t => {
+        const planName = t.planId?.name || 'Unknown';
+        planDistribution[planName] = (planDistribution[planName] || 0) + 1;
+    });
+
+    // Recent tenants (last 5)
+    const recentTenants = tenants
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5)
+        .map(t => ({
+            _id: t._id,
+            name: t.name,
+            ownerName: t.ownerName,
+            email: t.email,
+            status: t.status,
+            planName: t.planId?.name || 'N/A',
+            createdAt: t.createdAt,
+        }));
+
+    res.status(200).json({
+        success: true,
+        data: {
+            totalTenants,
+            activeTenants,
+            suspendedTenants,
+            totalPlans: plans.length,
+            expiringSoon,
+            monthlyRevenue,
+            planDistribution,
+            recentTenants,
+        },
+    });
+});
+
+// @desc    Change super admin's own password
+// @route   PUT /api/super-admin/change-password
+// @access  Private (Super Admin)
+const changePassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        res.status(400);
+        throw new Error('Please provide both current and new passwords');
+    }
+
+    if (newPassword.length < 6) {
+        res.status(400);
+        throw new Error('New password must be at least 6 characters');
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+        res.status(401);
+        throw new Error('Current password is incorrect');
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password changed successfully' });
+});
+
 module.exports = {
     getTenants,
     createTenant,
     updateTenant,
     deleteTenant,
     resetTenantPassword,
+    getStats,
+    changePassword,
 };
