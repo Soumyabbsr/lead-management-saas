@@ -28,7 +28,7 @@ export default function SuperAdminLogin() {
         setLoadingLocal(true);
 
         try {
-            const res = await api.post('/api/auth/login', { email: email.trim().toLowerCase(), password });
+            const res = await api.post('/auth/login', { email: email.trim().toLowerCase(), password });
 
             if (res.data.success) {
                 const user = res.data.data.user;
