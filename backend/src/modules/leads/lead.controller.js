@@ -3,6 +3,22 @@ const Lead = require('../../models/Lead');
 const User = require('../../models/User');
 const Activity = require('../../models/Activity');
 const Tenant = require('../../models/Tenant');
+const { sendTemplate } = require('../whatsapp/whatsapp.service');
+
+const TEMPLATE_NAME = process.env.WHATSAPP_TEMPLATE_NAME || 'visit_reminder';
+const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANG || 'en';
+
+/**
+ * Convert 24h time to 12h format (e.g., "14:30" -> "02:30 PM")
+ */
+const formatTime12h = (timeStr) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+};
 
 // Helper function to auto-assign lead based on preferred Area
 const assignLead = async (preferredArea, tenantId) => {
@@ -178,6 +194,49 @@ const updateLead = asyncHandler(async (req, res) => {
             description: `Visit scheduled for ${new Date(req.body.visitDate).toLocaleString('en-IN')}`,
             performedBy: req.user._id,
         });
+
+        // ── Send instant WhatsApp notification ──
+        try {
+            const recipientPhone = lead.whatsapp || lead.phone;
+            console.log(`[Lead Update] Visit scheduled! Phone: ${recipientPhone}, visitDate: ${req.body.visitDate}`);
+
+            if (recipientPhone) {
+                // Get visit time from visitSchedule or visitDate
+                const visitSchedule = req.body.visitSchedule;
+                const visitTimeStr = visitSchedule?.time || '';
+                const displayTime = formatTime12h(visitTimeStr) || new Date(req.body.visitDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+                // Get assigned agent phone for staff_number
+                const agent = await User.findById(lead.assignedTo).select('phone');
+                const staffPhone = agent?.phone || '';
+
+                const bodyParameters = [
+                    { type: 'text', text: lead.name || 'Customer' },
+                    { type: 'text', text: displayTime },
+                    { type: 'text', text: lead.preferredArea || 'the property' },
+                    { type: 'text', text: staffPhone },
+                ];
+
+                console.log(`[Lead Update] Sending WhatsApp template to ${recipientPhone}...`);
+
+                const result = await sendTemplate(
+                    recipientPhone,
+                    TEMPLATE_NAME,
+                    TEMPLATE_LANGUAGE,
+                    bodyParameters
+                );
+
+                if (result.success) {
+                    console.log(`[Lead Update] ✅ WhatsApp sent for lead ${lead._id}`);
+                } else {
+                    console.log(`[Lead Update] ⚠️ WhatsApp failed: ${result.error}`);
+                }
+            } else {
+                console.log(`[Lead Update] No phone number for lead ${lead._id}`);
+            }
+        } catch (waErr) {
+            console.error('[Lead Update] WhatsApp error:', waErr.message);
+        }
     } else if (req.body.visitStatus === 'Done') {
         await Activity.create({
             tenantId: req.user.tenantId,
