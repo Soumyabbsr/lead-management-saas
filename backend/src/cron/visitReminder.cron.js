@@ -9,13 +9,15 @@ const TEMPLATE_NAME = process.env.WHATSAPP_TEMPLATE_NAME || 'visit_reminder';
 const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANG || 'en';
 
 /**
- * Combines visit date + time ("HH:MM") into a single Date object (IST)
+ * Combines visit date + time ("HH:MM") into a single Date object
+ * Visit times are in IST (UTC+5:30), so we convert to UTC for comparison
  */
 const getVisitDateTime = (visitDate, visitTime) => {
     const date = new Date(visitDate);
     if (visitTime) {
         const [hours, minutes] = visitTime.split(':').map(Number);
-        date.setHours(hours, minutes, 0, 0);
+        // Convert IST to UTC: subtract 5 hours 30 minutes
+        date.setUTCHours(hours - 5, minutes - 30, 0, 0);
     }
     return date;
 };
