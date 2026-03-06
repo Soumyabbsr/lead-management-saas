@@ -213,7 +213,7 @@ const updateLead = asyncHandler(async (req, res) => {
                 const bodyParameters = [
                     { type: 'text', text: lead.name || 'Customer' },
                     { type: 'text', text: displayTime },
-                    { type: 'text', text: lead.preferredArea || 'the property' },
+                    { type: 'text', text: visitSchedule?.propertyName || lead.preferredArea || 'the property' },
                     { type: 'text', text: staffPhone },
                 ];
 
