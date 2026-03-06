@@ -27,7 +27,7 @@ const getVisitDateTime = (visitDate, visitTime) => {
     const date = new Date(visitDate);
     if (visitTime) {
         const [hours, minutes] = visitTime.split(':').map(Number);
-        // Set time in IST (UTC+5:30) — subtract offset to get UTC equivalent
+        // Set time in IST (UTC+5:30) — subtract offset to get UTC 
         date.setUTCHours(hours - 5, minutes - 30, 0, 0);
     }
     return date;
