@@ -36,6 +36,10 @@ const visitSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
+        reminderSentAt: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,

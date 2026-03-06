@@ -5,8 +5,30 @@ const User = require('./models/User');   // ✅ ADD THIS LINE
 
 const app = express();
 
-// Middlewares
-app.use(cors({ origin: '*' })); // Allow frontend origin
+// CORS — allow main domain, Vercel previews, and localhost
+const allowedOrigins = [
+  'https://lead-management-saas.vercel.app',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // Allow main domain
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Allow all Vercel preview subdomains (*.vercel.app)
+    if (/\.vercel\.app$/.test(origin)) return callback(null, true);
+
+    // Allow localhost for development
+    if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+
+    // Reject everything else
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

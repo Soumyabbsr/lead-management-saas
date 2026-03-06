@@ -5,6 +5,8 @@ const {
     updateTenant,
     deleteTenant,
     resetTenantPassword,
+    getStats,
+    changePassword,
 } = require('./superAdmin.controller');
 
 const { protect, authorize } = require('../../middlewares/auth.middleware');
@@ -15,6 +17,13 @@ const router = express.Router();
 router.use(protect);
 router.use(authorize('super_admin'));
 
+// Stats
+router.get('/stats', getStats);
+
+// Change password
+router.put('/change-password', changePassword);
+
+// Tenants
 router.route('/tenants')
     .get(getTenants)
     .post(createTenant);

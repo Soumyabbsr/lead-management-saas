@@ -2,6 +2,36 @@ const asyncHandler = require('express-async-handler');
 const Visit = require('../../models/Visit');
 const Lead = require('../../models/Lead');
 const Activity = require('../../models/Activity');
+const User = require('../../models/User');
+const { sendTemplate } = require('../whatsapp/whatsapp.service');
+
+const TEMPLATE_NAME = process.env.WHATSAPP_TEMPLATE_NAME || 'visit_reminder';
+const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANG || 'en';
+
+/**
+ * Convert 24h time to 12h format (e.g., "14:30" → "02:30 PM")
+ */
+const formatTime12h = (time) => {
+    if (!time) return '';
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+};
+
+/**
+ * Combine visit date + time into a proper Date object
+ * Handles timezone by using UTC methods
+ */
+const getVisitDateTime = (visitDate, visitTime) => {
+    const date = new Date(visitDate);
+    if (visitTime) {
+        const [hours, minutes] = visitTime.split(':').map(Number);
+        // Set time in IST (UTC+5:30) — subtract offset to get UTC 
+        date.setUTCHours(hours - 5, minutes - 30, 0, 0);
+    }
+    return date;
+};
 
 // @desc    Schedule a visit
 // @route   POST /api/visits
@@ -40,6 +70,51 @@ const scheduleVisit = asyncHandler(async (req, res) => {
         description: `Visit scheduled for ${date} at ${time} with ${fieldAgent}`,
         performedBy: req.user._id,
     });
+
+    // ── Instant WhatsApp notification if visit is within 2 hours ──
+    try {
+        const visitDateTime = getVisitDateTime(date, time);
+        const now = new Date();
+        const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+        if (visitDateTime <= twoHoursFromNow && visitDateTime > now) {
+            const recipientPhone = lead.whatsapp || lead.phone;
+            if (recipientPhone) {
+                // Get field agent's phone for staff_number
+                const agent = await User.findById(fieldAgent).select('phone');
+                const staffPhone = agent?.phone || '';
+
+                const bodyParameters = [
+                    { type: 'text', text: lead.name || 'Customer' },
+                    { type: 'text', text: formatTime12h(time) },
+                    { type: 'text', text: lead.preferredArea || 'the property' },
+                    { type: 'text', text: staffPhone },
+                ];
+
+                console.log(`[Visit] Sending instant WhatsApp to ${recipientPhone} (visit within 2hrs)`);
+
+                const result = await sendTemplate(
+                    recipientPhone,
+                    TEMPLATE_NAME,
+                    TEMPLATE_LANGUAGE,
+                    bodyParameters
+                );
+
+                // Mark as sent
+                visit.reminderSentAt = new Date();
+                await visit.save();
+
+                if (result.success) {
+                    console.log(`[Visit] ✅ Instant reminder sent for visit ${visit._id}`);
+                } else {
+                    console.log(`[Visit] ⚠️ Instant reminder failed: ${result.error}`);
+                }
+            }
+        }
+    } catch (whatsappErr) {
+        // Don't fail the visit creation if WhatsApp fails
+        console.error('[Visit] WhatsApp notification error:', whatsappErr.message);
+    }
 
     res.status(201).json({ success: true, data: visit });
 });
@@ -107,3 +182,4 @@ module.exports = {
     updateVisitStatus,
     getVisits,
 };
+
