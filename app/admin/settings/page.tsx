@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { Settings2, Bell, Shield, GitMerge, Clock, AlertTriangle, Save, MapPin, X } from 'lucide-react';
+import { Settings2, Bell, Shield, GitMerge, Clock, AlertTriangle, Save, MapPin, X, Navigation, Locate } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
 // Defined outside component to prevent remounting on every keystroke (input focus loss bug)
@@ -35,8 +35,26 @@ export default function AdminSettingsPage() {
     const [alertHours, setAlertHours] = useState(24);
     const [notifs, setNotifs] = useState({ email: true, push: false, sms: true });
 
-    const { areas, addArea, removeArea } = useSettingsStore();
+    const { areas, addArea, removeArea, officeLocation, lateThresholdTime, updateOfficeLocation, fetchSettings } = useSettingsStore();
     const [newArea, setNewArea] = useState('');
+
+    // Office location local state
+    const [oLat, setOLat] = useState('');
+    const [oLng, setOLng] = useState('');
+    const [oRadius, setORadius] = useState('100');
+    const [oLateTime, setOLateTime] = useState('10:00');
+    const [gettingGps, setGettingGps] = useState(false);
+
+    // Sync from store on load
+    useState(() => {
+        fetchSettings();
+    });
+    useState(() => {
+        if (officeLocation.latitude) setOLat(String(officeLocation.latitude));
+        if (officeLocation.longitude) setOLng(String(officeLocation.longitude));
+        if (officeLocation.radiusMeters) setORadius(String(officeLocation.radiusMeters));
+        if (lateThresholdTime) setOLateTime(lateThresholdTime);
+    });
 
     function handleAddArea() {
         if (!newArea.trim()) return;
@@ -114,6 +132,65 @@ export default function AdminSettingsPage() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <SectionTitle title="Office Location & Geofence" icon={Navigation} desc="Set office GPS coordinates for attendance verification" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 140px' }}>
+                                    <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4, display: 'block' }}>Latitude</label>
+                                    <input type="number" step="any" value={oLat} onChange={e => setOLat(e.target.value)} placeholder="e.g. 12.9716" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                                </div>
+                                <div style={{ flex: '1 1 140px' }}>
+                                    <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4, display: 'block' }}>Longitude</label>
+                                    <input type="number" step="any" value={oLng} onChange={e => setOLng(e.target.value)} placeholder="e.g. 77.5946" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 140px' }}>
+                                    <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4, display: 'block' }}>Radius (meters)</label>
+                                    <input type="number" value={oRadius} onChange={e => setORadius(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                                </div>
+                                <div style={{ flex: '1 1 140px' }}>
+                                    <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4, display: 'block' }}>Late After (HH:mm)</label>
+                                    <input type="time" value={oLateTime} onChange={e => setOLateTime(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                <button
+                                    onClick={() => {
+                                        setGettingGps(true);
+                                        navigator.geolocation.getCurrentPosition(
+                                            pos => { setOLat(String(pos.coords.latitude)); setOLng(String(pos.coords.longitude)); setGettingGps(false); toast.success('GPS location captured'); },
+                                            () => { setGettingGps(false); toast.error('Could not get GPS location'); },
+                                            { enableHighAccuracy: true }
+                                        );
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    <Locate size={14} /> {gettingGps ? 'Getting...' : 'Use My Current Location'}
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (!oLat || !oLng) { toast.error('Please set latitude and longitude'); return; }
+                                        await updateOfficeLocation({
+                                            officeLocation: { latitude: parseFloat(oLat), longitude: parseFloat(oLng), radiusMeters: parseInt(oRadius) || 100 },
+                                            lateThresholdTime: oLateTime,
+                                        });
+                                        toast.success('Office location saved successfully');
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: '#0d1b2e', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    <Save size={14} /> Save Location
+                                </button>
+                            </div>
+                            {officeLocation.latitude !== 0 && (
+                                <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e8eef4', fontSize: 12, color: '#475569' }}>
+                                    <strong>Current:</strong> {officeLocation.latitude.toFixed(6)}, {officeLocation.longitude.toFixed(6)} — {officeLocation.radiusMeters}m radius
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </div>
