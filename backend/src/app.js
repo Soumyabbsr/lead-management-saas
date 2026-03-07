@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { errorHandler } = require('./middlewares/error.middleware');
 const User = require('./models/User');   // ✅ ADD THIS LINE
 
@@ -32,6 +33,10 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (selfies, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 
 // Basic route
 app.get('/', (req, res) => {

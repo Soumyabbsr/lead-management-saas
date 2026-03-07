@@ -1,29 +1,83 @@
 const Attendance = require('../../models/Attendance');
+const Settings = require('../../models/Settings');
 
+// ── Haversine distance (meters) ──────────────────────────
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Check In ─────────────────────────────────────────────
 exports.checkIn = async (req, res) => {
     try {
         const userId = req.user.id;
+        const tenantId = req.user.tenantId;
         const today = new Date().toISOString().slice(0, 10);
         const now = new Date();
 
-        // Find or create attendance record for today
-        let record = await Attendance.findOne({ employee: userId, date: today });
-
-        if (!record) {
-            record = new Attendance({
-                employee: userId,
-                date: today,
-                checkIn: now,
-                activeLogins: [{ in: now, out: null }]
-            });
-        } else {
-            // Check if already checked in (last activeLogin has no 'out')
-            const lastLogin = record.activeLogins[record.activeLogins.length - 1];
-            if (lastLogin && !lastLogin.out) {
-                return res.status(400).json({ success: false, message: 'Already checked in' });
-            }
-            record.activeLogins.push({ in: now, out: null });
+        // Prevent duplicate check-in
+        const existing = await Attendance.findOne({ employee: userId, date: today, tenantId });
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Already checked in today' });
         }
+
+        const { latitude, longitude } = req.body;
+        if (!latitude || !longitude) {
+            return res.status(400).json({ success: false, message: 'GPS location is required' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Selfie image is required' });
+        }
+
+        // Get tenant settings for geofence
+        let settings = await Settings.findOne({ tenantId });
+        if (!settings) {
+            settings = await Settings.findOne({ singletonId: 'global_settings' });
+        }
+
+        let locationVerified = false;
+        if (settings && settings.officeLocation && settings.officeLocation.latitude && settings.officeLocation.longitude) {
+            const dist = haversineDistance(
+                parseFloat(latitude), parseFloat(longitude),
+                settings.officeLocation.latitude, settings.officeLocation.longitude
+            );
+            locationVerified = dist <= (settings.officeLocation.radiusMeters || 100);
+        }
+
+        // Determine status: Present or Late
+        let status = 'Present';
+        if (settings && settings.lateThresholdTime) {
+            const [threshH, threshM] = settings.lateThresholdTime.split(':').map(Number);
+            const currentH = now.getHours();
+            const currentM = now.getMinutes();
+            if (currentH > threshH || (currentH === threshH && currentM > threshM)) {
+                status = 'Late';
+            }
+        }
+
+        const selfieUrl = `/uploads/selfies/${req.file.filename}`;
+
+        const record = new Attendance({
+            employee: userId,
+            tenantId,
+            date: today,
+            checkIn: now,
+            status,
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude),
+            selfieUrl,
+            locationVerified,
+            ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+            deviceInfo: req.headers['user-agent'] || '',
+            activeLogins: [{ in: now, out: null }],
+        });
 
         await record.save();
         res.status(200).json({ success: true, data: record });
@@ -32,13 +86,15 @@ exports.checkIn = async (req, res) => {
     }
 };
 
+// ── Check Out ────────────────────────────────────────────
 exports.checkOut = async (req, res) => {
     try {
         const userId = req.user.id;
+        const tenantId = req.user.tenantId;
         const today = new Date().toISOString().slice(0, 10);
         const now = new Date();
 
-        const record = await Attendance.findOne({ employee: userId, date: today });
+        const record = await Attendance.findOne({ employee: userId, date: today, tenantId });
         if (!record) {
             return res.status(404).json({ success: false, message: 'No check-in record found for today' });
         }
@@ -63,13 +119,14 @@ exports.checkOut = async (req, res) => {
     }
 };
 
+// ── Today's Attendance (used by dashboard widget) ────────
 exports.getTodayAttendance = async (req, res) => {
     try {
         const today = new Date().toISOString().slice(0, 10);
+        const tenantId = req.user.tenantId;
 
-        // Admins can see everyone, Sales can only see themselves
-        const query = { date: today };
-        if (req.user.role !== 'Admin') {
+        const query = { date: today, tenantId };
+        if (req.user.role !== 'admin') {
             query.employee = req.user.id;
         }
 
@@ -80,15 +137,78 @@ exports.getTodayAttendance = async (req, res) => {
     }
 };
 
+// ── My Attendance (employee's own records) ───────────────
+exports.getMyAttendance = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const tenantId = req.user.tenantId;
+        const { month, year } = req.query;
+
+        const query = { employee: userId, tenantId };
+
+        if (month && year) {
+            const m = String(month).padStart(2, '0');
+            // Match dates like "2026-03-XX"
+            query.date = { $regex: `^${year}-${m}` };
+        }
+
+        const records = await Attendance.find(query).sort({ date: -1 });
+        res.status(200).json({ success: true, data: records });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ── Tenant Report (admin) ────────────────────────────────
+exports.getTenantReport = async (req, res) => {
+    try {
+        const tenantId = req.user.tenantId;
+        const { date, month, year, employeeId } = req.query;
+
+        const query = { tenantId };
+
+        if (employeeId) {
+            query.employee = employeeId;
+        }
+
+        if (date) {
+            // Single-day view
+            query.date = date;
+        } else if (month && year) {
+            const m = String(month).padStart(2, '0');
+            query.date = { $regex: `^${year}-${m}` };
+        }
+
+        const records = await Attendance.find(query)
+            .populate('employee', 'name role email phone')
+            .sort({ date: -1 });
+
+        // Compute summary
+        const presentCount = records.filter(r => r.status === 'Present').length;
+        const lateCount = records.filter(r => r.status === 'Late').length;
+        const absentCount = records.filter(r => r.status === 'Absent').length;
+
+        res.status(200).json({
+            success: true,
+            data: records,
+            summary: { presentCount, lateCount, absentCount, totalRecords: records.length }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ── Attendance by Date (kept for backward compat) ────────
 exports.getAttendanceByDate = async (req, res) => {
     try {
-        const { date } = req.query; // YYYY-MM-DD
+        const { date } = req.query;
         if (!date) {
             return res.status(400).json({ success: false, message: 'Date is required' });
         }
 
-        const query = { date };
-        if (req.user.role !== 'Admin') {
+        const tenantId = req.user.tenantId;
+        const query = { date, tenantId };
+        if (req.user.role !== 'admin') {
             query.employee = req.user.id;
         }
 
