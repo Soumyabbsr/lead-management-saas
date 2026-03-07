@@ -125,9 +125,14 @@ exports.getTodayAttendance = async (req, res) => {
         const today = new Date().toISOString().slice(0, 10);
         const tenantId = req.user.tenantId;
 
-        const query = { date: today, tenantId };
+        const query = { date: today };
+        // Include records with matching tenantId OR records without tenantId (legacy)
+        if (tenantId) {
+            query.$or = [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }];
+        }
         if (req.user.role !== 'admin') {
             query.employee = req.user.id;
+            delete query.$or; // For non-admins, just filter by their own employee ID
         }
 
         const records = await Attendance.find(query).populate('employee', 'name role');
@@ -141,14 +146,12 @@ exports.getTodayAttendance = async (req, res) => {
 exports.getMyAttendance = async (req, res) => {
     try {
         const userId = req.user.id;
-        const tenantId = req.user.tenantId;
         const { month, year } = req.query;
 
-        const query = { employee: userId, tenantId };
+        const query = { employee: userId };
 
         if (month && year) {
             const m = String(month).padStart(2, '0');
-            // Match dates like "2026-03-XX"
             query.date = { $regex: `^${year}-${m}` };
         }
 
@@ -165,14 +168,26 @@ exports.getTenantReport = async (req, res) => {
         const tenantId = req.user.tenantId;
         const { date, month, year, employeeId } = req.query;
 
-        const query = { tenantId };
+        // Build query — include records with matching tenantId OR without tenantId (legacy)
+        const query = {};
+        if (tenantId) {
+            // Get all employees of this tenant to scope old records
+            const User = require('../../models/User');
+            const tenantEmployees = await User.find({ tenantId }, '_id');
+            const tenantEmployeeIds = tenantEmployees.map(e => e._id);
+
+            query.$or = [
+                { tenantId },
+                { tenantId: { $exists: false }, employee: { $in: tenantEmployeeIds } },
+                { tenantId: null, employee: { $in: tenantEmployeeIds } },
+            ];
+        }
 
         if (employeeId) {
             query.employee = employeeId;
         }
 
         if (date) {
-            // Single-day view
             query.date = date;
         } else if (month && year) {
             const m = String(month).padStart(2, '0');
@@ -207,9 +222,12 @@ exports.getAttendanceByDate = async (req, res) => {
         }
 
         const tenantId = req.user.tenantId;
-        const query = { date, tenantId };
+        const query = { date };
+
         if (req.user.role !== 'admin') {
             query.employee = req.user.id;
+        } else if (tenantId) {
+            query.$or = [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }];
         }
 
         const records = await Attendance.find(query).populate('employee', 'name role');
@@ -218,3 +236,4 @@ exports.getAttendanceByDate = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
