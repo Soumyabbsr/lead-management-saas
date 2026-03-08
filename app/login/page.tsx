@@ -35,7 +35,13 @@ export default function LoginPage() {
                 }
             }
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Invalid credentials');
+            const msg = err.response?.data?.message || err.response?.data?.error || 'Invalid credentials';
+            // Redirect to suspended page if account is suspended
+            if (err.response?.status === 403 && msg.toLowerCase().includes('suspended')) {
+                router.push('/suspended');
+                return;
+            }
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
