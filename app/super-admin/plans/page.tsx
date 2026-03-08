@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/apiClient';
-import { Plus, CheckCircle2, ShieldAlert, Edit2, Package } from 'lucide-react';
+import { Plus, CheckCircle2, ShieldAlert, Edit2, Package, Trash2 } from 'lucide-react';
 import AddPlanModal from './AddPlanModal';
 
 export default function PlansPage() {
@@ -26,6 +26,18 @@ export default function PlansPage() {
             console.error('Failed to fetch plans', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const deletePlan = async (id: string, planName: string) => {
+        if (!confirm(`Are you sure you want to delete the "${planName}" plan? This cannot be undone.`)) return;
+        try {
+            const res = await api.delete(`/super-admin/plans/${id}`);
+            if (res.data.success) {
+                setPlans(plans.filter(p => p._id !== id));
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Failed to delete plan');
         }
     };
 
@@ -119,6 +131,13 @@ export default function PlansPage() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => deletePlan(plan._id, plan.name)}
+                                    title="Delete Plan"
+                                    style={{ background: 'none', border: '1px solid #fecaca', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', color: '#ef4444', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                    <Trash2 size={14} />
+                                </button>
                                 <button
                                     onClick={() => togglePlanStatus(plan._id, plan.isActive)}
                                     title={plan.isActive ? 'Mark Inactive' : 'Mark Active'}

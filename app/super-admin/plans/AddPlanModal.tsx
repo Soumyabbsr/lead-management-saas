@@ -13,7 +13,7 @@ interface AddPlanModalProps {
 
 export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }: AddPlanModalProps) {
     const [formData, setFormData] = useState({
-        name: 'Basic',
+        name: '',
         priceMonthly: 0,
         priceYearly: 0,
         maxEmployees: 5,
@@ -27,15 +27,17 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
     useEffect(() => {
         if (planToEdit) {
             setFormData({
-                name: planToEdit.name || 'Basic',
+                name: planToEdit.name || '',
                 priceMonthly: planToEdit.priceMonthly || 0,
                 priceYearly: planToEdit.priceYearly || 0,
                 maxEmployees: planToEdit.maxEmployees || 5,
                 maxLeads: planToEdit.maxLeads || 100,
                 isActive: planToEdit.isActive !== undefined ? planToEdit.isActive : true
             });
+        } else {
+            setFormData({ name: '', priceMonthly: 0, priceYearly: 0, maxEmployees: 5, maxLeads: 100, isActive: true });
         }
-    }, [planToEdit]);
+    }, [planToEdit, isOpen]);
 
     if (!isOpen) return null;
 
@@ -79,17 +81,15 @@ export default function AddPlanModal({ isOpen, onClose, onSuccess, planToEdit }:
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Plan Tier</label>
-                        <select
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Plan Name</label>
+                        <input
                             required
+                            type="text"
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box', WebkitAppearance: 'auto' as any }}
-                        >
-                            <option value="Free">Free</option>
-                            <option value="Basic">Basic</option>
-                            <option value="Pro">Pro</option>
-                        </select>
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
+                            placeholder="e.g. Starter, Pro, Enterprise, Gold"
+                        />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
