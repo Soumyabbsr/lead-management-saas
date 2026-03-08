@@ -7,7 +7,7 @@ import { useEmployeeStore } from '@/store/useEmployeeStore';
 import { useToast } from '@/context/ToastContext';
 import { Lead, LeadStage } from '@/types/lead';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Phone, MessageCircle, Eye, Trash2, Search } from 'lucide-react';
+import { Phone, MessageCircle, Eye, Trash2, Search, Download } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
 const STAGES: LeadStage[] = ['New', 'Contacted', 'Visit', 'Negotiation', 'Booked', 'Lost'];
@@ -112,6 +112,37 @@ export default function AdminLeadsPage() {
         toast.success(`Reassigned to ${agent}`);
     }
 
+    function exportToCSV() {
+        if (!filtered.length) {
+            toast.error('No leads to export');
+            return;
+        }
+
+        const headers = ['Name', 'Phone', 'WhatsApp', 'Stage', 'Assigned To', 'Area', 'Budget', 'Source', 'Activity Time'];
+
+        const rows = filtered.map(lead => [
+            `"${lead.name?.replace(/"/g, '""') || ''}"`,
+            `"${lead.phone || ''}"`,
+            `"${lead.whatsapp || ''}"`,
+            `"${lead.stage || ''}"`,
+            `"${lead.assignedTo?.replace(/"/g, '""') || ''}"`,
+            `"${lead.preferredArea?.replace(/"/g, '""') || ''}"`,
+            `"${lead.budget || ''}"`,
+            `"${lead.source?.replace(/"/g, '""') || ''}"`,
+            `"${new Date(lead.lastActivity).toLocaleString()}"`
+        ]);
+
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <div className="responsive-padding" style={{ flex: 1, padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f1f5f9' }}>
 
@@ -158,6 +189,17 @@ export default function AdminLeadsPage() {
                 </select>
 
                 <span style={{ marginLeft: 'auto', fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>{filtered.length} matching leads</span>
+                <button
+                    onClick={exportToCSV}
+                    title="Export filtered leads to CSV"
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 6, marginLeft: 10,
+                        padding: '7px 12px', borderRadius: 8, background: '#10b981', color: '#fff',
+                        border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600
+                    }}
+                >
+                    <Download size={14} /> Export CSV
+                </button>
             </div>
 
             {/* Bulk action bar */}

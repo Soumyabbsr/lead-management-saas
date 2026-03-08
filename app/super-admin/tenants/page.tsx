@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/apiClient';
-import { Plus, Search, Edit2, ShieldAlert, CheckCircle2, LogIn, KeyRound } from 'lucide-react';
+import { Plus, Search, Edit2, ShieldAlert, CheckCircle2, LogIn, KeyRound, Trash2 } from 'lucide-react';
 import AddTenantModal from './AddTenantModal';
 import EditTenantModal from './EditTenantModal';
 import ResetPasswordModal from './ResetPasswordModal';
@@ -49,6 +49,18 @@ export default function TenantsPage() {
             }
         } catch (error) {
             alert('Failed to update tenant status');
+        }
+    };
+
+    const deleteTenant = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
+        try {
+            const res = await api.delete(`/super-admin/tenants/${id}`);
+            if (res.data.success) {
+                setTenants(tenants.filter(t => t._id !== id));
+            }
+        } catch (error) {
+            alert('Failed to delete tenant');
         }
     };
 
@@ -160,6 +172,13 @@ export default function TenantsPage() {
                                                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                 >
                                                     {t.status === 'active' ? <ShieldAlert size={16} /> : <CheckCircle2 size={16} />}
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteTenant(t._id, t.name)}
+                                                    title="Delete Tenant"
+                                                    style={{ background: 'none', border: '1px solid #fecaca', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    <Trash2 size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => setEditTenant(t)}
