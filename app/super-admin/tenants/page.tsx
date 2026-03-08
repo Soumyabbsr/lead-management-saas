@@ -177,9 +177,16 @@ export default function TenantsPage() {
                                                 </button>
                                                 <button
                                                     onClick={async () => {
+                                                        if (!confirm(`Login as vendor "${t.name}"? You will be redirected to their admin dashboard.`)) return;
                                                         try {
-                                                            alert(`In a real app, this generates a short-lived impersonation token for ${t.name} and redirects you to /admin/dashboard.`);
-                                                        } catch (e) { }
+                                                            const res = await api.post(`/super-admin/tenants/${t._id}/impersonate`);
+                                                            if (res.data.success) {
+                                                                login(res.data.data.token, res.data.data.user);
+                                                                router.push('/admin/dashboard');
+                                                            }
+                                                        } catch (e: any) {
+                                                            alert(e.response?.data?.message || 'Failed to impersonate vendor');
+                                                        }
                                                     }}
                                                     title="Login As Vendor"
                                                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

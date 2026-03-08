@@ -4,8 +4,8 @@ const planSchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: [true, 'Please add a plan name (Free, Basic, Pro)'],
-            enum: ['Free', 'Basic', 'Pro'],
+            required: [true, 'Please add a plan name'],
+            trim: true,
         },
         priceMonthly: {
             type: Number,

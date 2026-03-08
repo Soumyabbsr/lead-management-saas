@@ -3,6 +3,7 @@ const Tenant = require('../../models/Tenant');
 const User = require('../../models/User');
 const Plan = require('../../models/Plan');
 const mongoose = require('mongoose');
+const { generateToken } = require('../auth/auth.service');
 
 // @desc    Get all active tenants
 // @route   GET /api/super-admin/tenants
@@ -275,6 +276,39 @@ const changePassword = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Password changed successfully' });
 });
 
+// @desc    Impersonate a tenant's admin (login as vendor)
+// @route   POST /api/super-admin/tenants/:id/impersonate
+// @access  Private (Super Admin)
+const impersonateTenant = asyncHandler(async (req, res) => {
+    const tenant = await Tenant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+
+    if (!tenant) {
+        res.status(404);
+        throw new Error('Tenant not found');
+    }
+
+    const adminUser = await User.findOne({ tenantId: tenant._id, role: 'admin' });
+
+    if (!adminUser) {
+        res.status(404);
+        throw new Error('No admin user found for this tenant');
+    }
+
+    const token = generateToken(adminUser._id);
+
+    // Return user data without password
+    const userData = adminUser.toObject();
+    delete userData.password;
+
+    res.status(200).json({
+        success: true,
+        data: {
+            token,
+            user: userData,
+        },
+    });
+});
+
 module.exports = {
     getTenants,
     createTenant,
@@ -283,4 +317,5 @@ module.exports = {
     resetTenantPassword,
     getStats,
     changePassword,
+    impersonateTenant,
 };

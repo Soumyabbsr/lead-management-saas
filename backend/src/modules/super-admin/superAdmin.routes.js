@@ -7,6 +7,7 @@ const {
     resetTenantPassword,
     getStats,
     changePassword,
+    impersonateTenant,
 } = require('./superAdmin.controller');
 
 const { protect, authorize } = require('../../middlewares/auth.middleware');
@@ -33,5 +34,6 @@ router.route('/tenants/:id')
     .delete(deleteTenant);
 
 router.put('/tenants/:id/reset-password', resetTenantPassword);
+router.post('/tenants/:id/impersonate', impersonateTenant);
 
 module.exports = router;
