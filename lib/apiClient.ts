@@ -29,4 +29,24 @@ api.interceptors.request.use(
     }
 );
 
+// Add a response interceptor to handle global errors like suspended accounts
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 403) {
+            const msg = error.response?.data?.message || '';
+            if (msg.toLowerCase().includes('suspended') && typeof window !== 'undefined') {
+                localStorage.removeItem('token');
+                window.location.href = '/suspended';
+            }
+        }
+        // Also handle 401 unauthorized to clear token
+        if (error.response?.status === 401 && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
